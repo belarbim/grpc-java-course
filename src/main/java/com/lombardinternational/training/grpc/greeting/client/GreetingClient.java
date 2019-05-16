@@ -1,10 +1,7 @@
 package com.lombardinternational.training.grpc.greeting.client;
 
 import com.proto.dummy.DummyServiceGrpc;
-import com.proto.greet.GreetRequest;
-import com.proto.greet.GreetResponse;
-import com.proto.greet.GreetServiceGrpc;
-import com.proto.greet.Greeting;
+import com.proto.greet.*;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 
@@ -22,6 +19,7 @@ public class GreetingClient {
                 .usePlaintext()
                 .build();
         callGreetServiceUnary(channel);
+        doServerStreamingCall(channel);
         System.out.println("ShutingDown channel");
         channel.shutdown();
 
@@ -35,5 +33,23 @@ public class GreetingClient {
         final GreetResponse greetResponse = greetServiceBlockingStub.greet(greetRequest);
 
         System.out.println(greetResponse.getResult());
+    }
+
+    private void doServerStreamingCall(ManagedChannel channel) {
+        GreetServiceGrpc.GreetServiceBlockingStub greetClient = GreetServiceGrpc.newBlockingStub(channel);
+
+        // Server Streaming
+        // we prepare the request
+        GreetManyTimesRequest greetManyTimesRequest =
+                GreetManyTimesRequest.newBuilder()
+                        .setGreeting(Greeting.newBuilder().setFirstName("Stephane"))
+                        .build();
+
+        // we stream the responses (in a blocking manner)
+        greetClient.greetManyTimes(greetManyTimesRequest)
+                .forEachRemaining(greetManyTimesResponse -> {
+                    System.out.println(greetManyTimesResponse.getResult());
+                });
+
     }
 }
